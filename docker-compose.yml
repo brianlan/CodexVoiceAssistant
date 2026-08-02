@@ -1,0 +1,80 @@
+name: codex-voice-assistant
+
+services:
+  codex-app-server:
+    build:
+      context: .
+      dockerfile: docker/codex.Dockerfile
+      args:
+        CODEX_VERSION: ${CODEX_VERSION:-0.146.0}
+    init: true
+    restart: unless-stopped
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    environment:
+      APP_SERVER_TOKEN: ${APP_SERVER_TOKEN:?Run ./scripts/setup.sh first}
+      APP_SERVER_LISTEN: ws://0.0.0.0:4222
+      HOME: /home/node
+      CODEX_HOME: ${HOST_CODEX_HOME:?Set HOST_CODEX_HOME in .env}
+      OPENAI_API_KEY: ${CODEX_API_KEY:-}
+      OPENAI_ENDPOINT: ${CODEX_API_ENDPOINT:-}
+      OPENAI_BASE_URL: ${CODEX_API_BASE_URL:-}
+      HTTP_PROXY: ${CODEX_HTTP_PROXY:-}
+      HTTPS_PROXY: ${CODEX_HTTPS_PROXY:-}
+      NO_PROXY: ${CODEX_NO_PROXY:-localhost,127.0.0.1,codex-app-server,voice-assistant}
+      http_proxy: ${CODEX_HTTP_PROXY:-}
+      https_proxy: ${CODEX_HTTPS_PROXY:-}
+      no_proxy: ${CODEX_NO_PROXY:-localhost,127.0.0.1,codex-app-server,voice-assistant}
+    volumes:
+      - type: bind
+        source: ${HOST_WORKSPACE:?Set HOST_WORKSPACE in .env}
+        target: /workspace
+      - type: bind
+        source: ${HOST_CODEX_HOME:?Set HOST_CODEX_HOME in .env}
+        target: ${HOST_CODEX_HOME:?Set HOST_CODEX_HOME in .env}
+      # A second bind makes absolute host symlinks such as ~/.codex/skills work in-container.
+      - type: bind
+        source: ${HOST_CODEX_HOME:?Set HOST_CODEX_HOME in .env}/skills
+        target: ${HOST_CODEX_HOME:?Set HOST_CODEX_HOME in .env}/skills
+    expose:
+      - "4222"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - internal
+
+  voice-assistant:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    restart: unless-stopped
+    depends_on:
+      - codex-app-server
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 3000
+      APP_HOST_IP: ${APP_HOST_IP:?Set APP_HOST_IP in .env}
+      APP_PASSWORD: ${APP_PASSWORD:?Run ./scripts/setup.sh first}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-12}
+      CERT_DIR: /app/certs
+      CODEX_APP_SERVER_URL: ws://codex-app-server:4222
+      APP_SERVER_TOKEN: ${APP_SERVER_TOKEN:?Run ./scripts/setup.sh first}
+      CODEX_WORKSPACE: /workspace
+      CODEX_PERMISSION_MODE: ${CODEX_PERMISSION_MODE:-workspace-write}
+      CODEX_MODEL: ${CODEX_MODEL:-}
+      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-}
+      REALTIME_MODEL: ${REALTIME_MODEL:-gpt-live-1-boulder-alpha}
+      REALTIME_VOICE: ${REALTIME_VOICE:-}
+      REALTIME_PROMPT: ${REALTIME_PROMPT:-}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - type: bind
+        source: ./data/certs
+        target: /app/certs
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge

@@ -1,0 +1,20 @@
+# Optional override for Linux hosts whose HTTP proxy only listens on 127.0.0.1.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.host-network.yml up -d
+services:
+  codex-app-server:
+    network_mode: host
+    networks: !reset []
+    extra_hosts: !reset []
+    environment:
+      APP_SERVER_LISTEN: ws://127.0.0.1:4222
+      HTTP_PROXY: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
+      HTTPS_PROXY: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
+      http_proxy: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
+      https_proxy: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
+
+  voice-assistant:
+    network_mode: host
+    networks: !reset []
+    ports: !reset []
+    environment:
+      CODEX_APP_SERVER_URL: ws://127.0.0.1:4222
