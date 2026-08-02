@@ -13,9 +13,11 @@ RUN apt-get update \
     esac \
     && codex_voice_gh_archive="gh_${GH_VERSION}_linux_${codex_voice_gh_arch}.tar.gz" \
     && curl --fail --location --silent --show-error \
+      --connect-timeout 20 --max-time 300 --retry 5 --retry-delay 2 --retry-all-errors \
       --output "/tmp/${codex_voice_gh_archive}" \
       "https://github.com/cli/cli/releases/download/v${GH_VERSION}/${codex_voice_gh_archive}" \
     && curl --fail --location --silent --show-error \
+      --connect-timeout 20 --max-time 300 --retry 5 --retry-delay 2 --retry-all-errors \
       --output "/tmp/gh_${GH_VERSION}_checksums.txt" \
       "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_checksums.txt" \
     && cd /tmp \

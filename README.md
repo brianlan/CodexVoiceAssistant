@@ -202,7 +202,7 @@ docker compose \
 
 此模式下 app-server 仅监听宿主机 `127.0.0.1:4222`，网关仍监听 `:3000`。它主要面向 Linux；Docker Desktop 环境优先使用默认 bridge 方案。
 
-覆盖文件同时注入大小写两套 `HTTP_PROXY`/`HTTPS_PROXY`，并让 app-server 共享宿主机网络，因此容器内的 `127.0.0.1:18080` 就是宿主机代理。普通 `docker compose up` 不具备这个语义。
+覆盖文件同时把大小写两套 `HTTP_PROXY`/`HTTPS_PROXY` 注入镜像构建和容器运行阶段，并让 build、app-server 和网关共享宿主机网络，因此其中的 `127.0.0.1:18080` 都是宿主机代理。普通 `docker compose up` 不具备这个语义。
 
 若希望后续命令更短，可在当前 shell 设置：
 
@@ -317,6 +317,8 @@ docker compose \
   -f docker-compose.host-network.yml \
   exec codex-app-server sh -lc 'env | grep -iE "^(http|https)_proxy="'
 ```
+
+如果构建 `gh` 下载步骤报 `curl` 退出码 `28`，同样表示构建阶段没有连通代理。确认命令同时包含 `docker-compose.host-network.yml`，并确认 `.env` 中 `CODEX_LOOPBACK_PROXY` 指向正在监听的宿主机回环代理。
 
 ### 语音连接超时，但文字任务可用
 

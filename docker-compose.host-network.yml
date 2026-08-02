@@ -2,6 +2,13 @@
 # Usage: docker compose -f docker-compose.yml -f docker-compose.host-network.yml up -d
 services:
   codex-app-server:
+    build:
+      network: host
+      args:
+        HTTP_PROXY: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
+        HTTPS_PROXY: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
+        http_proxy: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
+        https_proxy: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
     network_mode: host
     networks: !reset []
     extra_hosts: !reset []
@@ -13,6 +20,13 @@ services:
       https_proxy: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
 
   voice-assistant:
+    build:
+      network: host
+      args:
+        HTTP_PROXY: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
+        HTTPS_PROXY: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
+        http_proxy: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
+        https_proxy: ${CODEX_LOOPBACK_PROXY:?Set CODEX_LOOPBACK_PROXY in .env}
     network_mode: host
     networks: !reset []
     ports: !reset []
