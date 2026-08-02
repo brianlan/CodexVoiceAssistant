@@ -19,6 +19,8 @@ if [ -z "$codex_voice_user_home" ]; then
   codex_voice_user_home="${HOME}"
 fi
 
+codex_voice_gh_config="${GH_CONFIG_DIR:-$codex_voice_user_home/.config/gh}"
+
 codex_voice_password="$(openssl rand -hex 16)"
 codex_voice_token="$(openssl rand -hex 32)"
 codex_voice_workspace="$(pwd -P)"
@@ -34,10 +36,12 @@ umask 077
   printf '%s\n' "SESSION_TTL_HOURS=12"
   printf '%s\n' "HOST_WORKSPACE=$codex_voice_workspace"
   printf '%s\n' "HOST_CODEX_HOME=$codex_voice_user_home/.codex"
+  printf '%s\n' "HOST_GH_CONFIG=$codex_voice_gh_config"
   printf '%s\n' "HOST_UID=$(id -u)"
   printf '%s\n' "HOST_GID=$(id -g)"
   printf '%s\n' "CODEX_PERMISSION_MODE=workspace-write"
   printf '%s\n' "CODEX_VERSION=0.146.0"
+  printf '%s\n' "GH_VERSION=2.86.0"
   printf '%s\n' "CODEX_MODEL="
   printf '%s\n' "CODEX_REASONING_EFFORT="
   printf '%s\n' "REALTIME_MODEL=gpt-live-1-boulder-alpha"

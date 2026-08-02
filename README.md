@@ -40,6 +40,7 @@ Voice Gateway ── JSON-RPC ──> Codex app-server
 
 - Docker Engine 和 Docker Compose v2；使用回环代理覆盖方案时宿主机必须是 Linux。
 - 宿主机 Codex 已通过 ChatGPT 或 API Key 登录，并且 `.env` 中的 `HOST_CODEX_HOME` 指向其绝对路径，例如 `/home/alice/.codex`，不要写 `~/.codex`。
+- 如需在容器内使用 `gh`，请先在宿主机执行 `gh auth login`；Compose 会把 `HOST_GH_CONFIG` 指向的目录以只读方式挂载到容器的 `/home/node/.config/gh`。镜像默认安装并固定 `gh 2.86.0`。
 - `HOST_WORKSPACE` 是唯一挂载给 Codex 的工作目录；默认在容器内对应 `/workspace`。
 - 访问设备具有麦克风权限，已信任本应用生成的 CA，并且能建立到 OpenAI Realtime 服务的 WebRTC 连接。
 - 局域网防火墙允许访问宿主机 TCP 3000 端口。
@@ -66,6 +67,7 @@ codex login status
 APP_HOST_IP=192.168.1.10
 HOST_WORKSPACE=/absolute/path/to/project
 HOST_CODEX_HOME=/home/you/.codex
+HOST_GH_CONFIG=/home/you/.config/gh
 CODEX_PERMISSION_MODE=workspace-write
 # 可选
 CODEX_MODEL=gpt-5.6-luna
@@ -78,9 +80,11 @@ CODEX_REASONING_EFFORT=xhigh
 docker compose up --build -d
 docker compose ps
 docker compose exec codex-app-server codex login status
+docker compose exec codex-app-server gh auth status
+docker compose exec codex-app-server git ls-remote origin HEAD
 ```
 
-最后一条命令应显示 `Logged in using ChatGPT` 或已使用 API Key 登录。如果你的代理只监听宿主机 `127.0.0.1`，不要使用上面的普通启动命令，直接使用[回环代理模式](#仅监听-127001-的代理)。
+Codex 检查应显示 `Logged in using ChatGPT` 或已使用 API Key 登录；`gh` 检查应显示宿主机的 GitHub 账号；`git ls-remote` 应返回远端 HEAD。容器启动时会运行 `gh auth setup-git`，并通过仅存在于容器内的全局 Git 配置把 `git@github.com:` 和 `ssh://git@github.com/` remote 透明改写为认证后的 HTTPS，不会修改宿主机仓库的 `origin`。如果你的代理只监听宿主机 `127.0.0.1`，不要使用上面的普通启动命令，直接使用[回环代理模式](#仅监听-127001-的代理)。
 
 访问：
 
@@ -260,6 +264,7 @@ CODEX_REASONING_EFFORT=xhigh
 | `HOST_UID` / `HOST_GID` | 当前用户 | 让 app-server 以宿主机用户身份写挂载目录 |
 | `CODEX_PERMISSION_MODE` | `workspace-write` | Codex sandbox 与审批策略 |
 | `CODEX_VERSION` | `0.146.0` | 构建 app-server 镜像时安装的 Codex 版本 |
+| `GH_VERSION` | `2.86.0` | 构建 app-server 镜像时安装的 GitHub CLI 版本 |
 | `CODEX_MODEL` | Codex 默认值 | 后端任务模型覆盖 |
 | `CODEX_REASONING_EFFORT` | 模型默认值 | 后端任务推理强度覆盖 |
 | `REALTIME_MODEL` | `gpt-live-1-boulder-alpha` | GPT-Live 实时语音模型 |

@@ -7,6 +7,7 @@ services:
       dockerfile: docker/codex.Dockerfile
       args:
         CODEX_VERSION: ${CODEX_VERSION:-0.146.0}
+        GH_VERSION: ${GH_VERSION:-2.86.0}
     init: true
     restart: unless-stopped
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
@@ -15,6 +16,8 @@ services:
       APP_SERVER_LISTEN: ws://0.0.0.0:4222
       HOME: /home/node
       CODEX_HOME: ${HOST_CODEX_HOME:?Set HOST_CODEX_HOME in .env}
+      GH_CONFIG_DIR: /home/node/.config/gh
+      GIT_CONFIG_GLOBAL: /tmp/codex-voice-gitconfig
       OPENAI_API_KEY: ${CODEX_API_KEY:-}
       OPENAI_ENDPOINT: ${CODEX_API_ENDPOINT:-}
       OPENAI_BASE_URL: ${CODEX_API_BASE_URL:-}
@@ -31,6 +34,11 @@ services:
       - type: bind
         source: ${HOST_CODEX_HOME:?Set HOST_CODEX_HOME in .env}
         target: ${HOST_CODEX_HOME:?Set HOST_CODEX_HOME in .env}
+      # Mount the host GitHub CLI config read-only so gh can reuse its auth.
+      - type: bind
+        source: ${HOST_GH_CONFIG:?Set HOST_GH_CONFIG in .env}
+        target: /home/node/.config/gh
+        read_only: true
       # A second bind makes absolute host symlinks such as ~/.codex/skills work in-container.
       - type: bind
         source: ${HOST_CODEX_HOME:?Set HOST_CODEX_HOME in .env}/skills
