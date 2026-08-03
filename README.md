@@ -214,6 +214,19 @@ docker compose logs -f
 
 容器代理负责 app-server 的 OpenAI HTTP/WebSocket 流量。浏览器的实时音频媒体链路仍由访问设备直接通过 WebRTC 建立；远程手机或电脑若无法访问相关 ICE/UDP/TCP 网络，可能出现“WebRTC 连接超时”，这不能仅靠容器的 `HTTP_PROXY` 修复。
 
+### 无代理但 build 网络不稳定
+
+如果宿主机能直接访问互联网，但 Docker 默认 build bridge 下载 GitHub Release 时超时，可以只让镜像构建使用宿主机网络：
+
+```bash
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.build-host.yml \
+  up --build -d
+```
+
+这个覆盖文件只改变 build 网络，不改变容器运行网络，也不需要配置任何代理变量。GitHub CLI 下载固定使用 HTTP/1.1、断点续传和 BuildKit 持久下载缓存；即使一次构建失败，后续构建也能继续使用已下载的部分。若需要清除此缓存，可运行 `docker builder prune`，但这也会删除其他未使用的 BuildKit 缓存。
+
 ## Codex 模型与 Realtime 配置
 
 可选 `.env` 项：
