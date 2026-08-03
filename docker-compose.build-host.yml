@@ -1,0 +1,11 @@
+# Optional Linux override for hosts with direct internet access but unreliable
+# Docker build bridge networking. Runtime services still use the base network.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.build-host.yml up --build -d
+services:
+  codex-app-server:
+    build:
+      network: host
+
+  voice-assistant:
+    build:
+      network: host

@@ -3,7 +3,8 @@ FROM node:22.19.0-bookworm
 ARG CODEX_VERSION=0.146.0
 ARG GH_VERSION=2.86.0
 ARG TARGETARCH
-RUN apt-get update \
+RUN --mount=type=cache,id=codex-voice-gh-download,target=/var/cache/codex-voice-gh,sharing=locked \
+    apt-get update \
     && apt-get install -y --no-install-recommends \
       bubblewrap ca-certificates curl git jq ripgrep zsh \
     && codex_voice_gh_arch="${TARGETARCH}" \
@@ -12,19 +13,34 @@ RUN apt-get update \
       *) echo "Unsupported architecture for GitHub CLI: $codex_voice_gh_arch" >&2; exit 1 ;; \
     esac \
     && codex_voice_gh_archive="gh_${GH_VERSION}_linux_${codex_voice_gh_arch}.tar.gz" \
+    && codex_voice_gh_cache="/var/cache/codex-voice-gh" \
     && curl --fail --location --silent --show-error \
-      --connect-timeout 20 --max-time 300 --retry 5 --retry-delay 2 --retry-all-errors \
-      --output "/tmp/${codex_voice_gh_archive}" \
-      "https://github.com/cli/cli/releases/download/v${GH_VERSION}/${codex_voice_gh_archive}" \
-    && curl --fail --location --silent --show-error \
-      --connect-timeout 20 --max-time 300 --retry 5 --retry-delay 2 --retry-all-errors \
-      --output "/tmp/gh_${GH_VERSION}_checksums.txt" \
+      --http1.1 --connect-timeout 30 --max-time 300 \
+      --retry 10 --retry-delay 5 --retry-all-errors \
+      --output "${codex_voice_gh_cache}/gh_${GH_VERSION}_checksums.txt" \
       "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_checksums.txt" \
-    && cd /tmp \
+    && if ! (cd "$codex_voice_gh_cache" \
+      && grep " ${codex_voice_gh_archive}$" "gh_${GH_VERSION}_checksums.txt" \
+        | sha256sum --check --strict >/dev/null 2>&1); then \
+      curl --fail --location --silent --show-error \
+        --http1.1 --continue-at - --connect-timeout 30 --max-time 1800 \
+        --retry 10 --retry-delay 5 --retry-all-errors \
+        --output "${codex_voice_gh_cache}/${codex_voice_gh_archive}" \
+        "https://github.com/cli/cli/releases/download/v${GH_VERSION}/${codex_voice_gh_archive}" \
+      || { \
+        rm -f "${codex_voice_gh_cache}/${codex_voice_gh_archive}"; \
+        curl --fail --location --silent --show-error \
+          --http1.1 --connect-timeout 30 --max-time 1800 \
+          --retry 10 --retry-delay 5 --retry-all-errors \
+          --output "${codex_voice_gh_cache}/${codex_voice_gh_archive}" \
+          "https://github.com/cli/cli/releases/download/v${GH_VERSION}/${codex_voice_gh_archive}"; \
+      }; \
+    fi \
+    && cd "$codex_voice_gh_cache" \
     && grep " ${codex_voice_gh_archive}$" "gh_${GH_VERSION}_checksums.txt" | sha256sum --check --strict \
-    && tar --extract --gzip --file "$codex_voice_gh_archive" \
-    && install --mode 0755 "gh_${GH_VERSION}_linux_${codex_voice_gh_arch}/bin/gh" /usr/local/bin/gh \
-    && rm -rf "/tmp/${codex_voice_gh_archive}" "/tmp/gh_${GH_VERSION}_checksums.txt" "/tmp/gh_${GH_VERSION}_linux_${codex_voice_gh_arch}" \
+    && tar --extract --gzip --file "$codex_voice_gh_archive" --directory /tmp \
+    && install --mode 0755 "/tmp/gh_${GH_VERSION}_linux_${codex_voice_gh_arch}/bin/gh" /usr/local/bin/gh \
+    && rm -rf "/tmp/gh_${GH_VERSION}_linux_${codex_voice_gh_arch}" \
     && npm install --global "@openai/codex@${CODEX_VERSION}" \
     && npm cache clean --force \
     && rm -rf /var/lib/apt/lists/*
