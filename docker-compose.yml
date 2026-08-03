@@ -80,6 +80,8 @@ services:
       - type: bind
         source: ./data/certs
         target: /app/certs
+        bind:
+          create_host_path: true
     networks:
       - internal
 
