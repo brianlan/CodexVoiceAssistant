@@ -98,6 +98,8 @@ https://APP_HOST_IP:3000
 
 浏览器只允许 HTTPS 安全上下文访问麦克风。第一次启动时网关会生成：
 
+如果 clone 后 `data/certs` 尚不存在，Docker Compose 会在首次启动时自动创建该宿主机目录。
+
 ```text
 data/certs/ca.crt       # 要导入访问设备的根证书
 data/certs/server.crt   # 自动签发的服务器证书
